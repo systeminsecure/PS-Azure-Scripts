@@ -40,6 +40,7 @@ Connect-MgGraph -Scopes "Application.Read.All","AppRoleAssignment.ReadWrite.All"
 
 # Set Variables
 $RoleRecords = @()
+$ApplicationName = "EmailAnalytics"
 
 # Graph API Resource ID
 $ResourceId=(Get-MgServicePrincipal -Filter "displayName eq 'Microsoft Graph'").Id
@@ -60,7 +61,7 @@ foreach ($role in $AllRoles){
 
 
 # Get id of enterprise app
-$PrincipalId = (Get-MgServicePrincipal -Filter "displayName eq 'EmailAnalytics'").Id   #-Property AppRoles | Select -ExpandProperty appRoles |fl
+$PrincipalId = (Get-MgServicePrincipal -Filter "displayName eq '$($ApplicationName)'").Id   #-Property AppRoles | Select -ExpandProperty appRoles |fl
 
 # Set permission grant loop
 Foreach ($record in $RoleRecords) {
