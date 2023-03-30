@@ -1,5 +1,5 @@
-<# Grant-GraphApiPerms_to_ServicePrincipal.ps1 
-v0.1 SystemInsecure
+<# Grant-GraphApiPerms_to_ServicePrincipal.ps1 v0.1 SystemInsecure
+ --== March 30, 2023 ==--
 
 Some Azure Enterprise apps (Service Principals) need additional permissions. If there is already an associated
 App Registration, those additional permissions can be granted there. If the App Registration is missing, you can use 
@@ -14,6 +14,8 @@ The roles can be assigned directly, or through Azure PIM. The roles MUST be ACTI
 
 https://learn.microsoft.com/en-us/powershell/module/azuread/new-azureadapplication?view=azureadps-2.0
 https://learn.microsoft.com/en-us/powershell/microsoftgraph/tutorial-grant-app-only-api-permissions?view=graph-powershell-1.0
+
+See Errata section at bottom for prerequisites, restrictions and the changelog.
 #>
 
 # Check to see if the Microsoft.Graph powershell module is installed
@@ -70,3 +72,20 @@ Foreach ($record in $RoleRecords) {
     $params
     New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $record.ResourceId -BodyParameter $params | Format-List Id, AppRoleId, CreatedDateTime, PrincipalDisplayName, PrincipalId, PrincipalType, ResourceDisplayName
 }
+
+<# --== Errata ==--
+
+Prerequisites needed before launching:
+- Powershell 5.1 or better
+- Graph API module installed (you need to do this in an elevated powershell window): > install-module Microsoft.Graph
+- Permissions (or an elevated role) as listed in the header.
+
+Restrictions
+- None
+
+To do in later versions:
+- Nothing planned
+
+Changelog:
+- 0.1 Initial version. Mar 30, 2023.
+#>
