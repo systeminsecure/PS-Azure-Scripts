@@ -2,10 +2,12 @@
  --== March 30, 2023 ==--
 
 Some Azure Enterprise apps (Service Principals) need additional permissions. If there is already an associated
-App Registration, those additional permissions can be granted there. If the App Registration is missing, you can use 
-Microsoft Graph PowerShell Module to add those permissions to the Service Principal directly.
+App Registration, those additional permissions can be granted there in the Azure Portal. If the App Registration is missing, you can use 
+the Microsoft Graph PowerShell Module to add those permissions to the Service Principal directly as there currently is no way
+to do this throught he Azure Portal.
 
-Suggested Azure AD roles should be granted to the user running this script:
+The suggested Azure AD roles should be granted to the user running this script:
+
   Privileged Role Administrator (needed for grants to Graph API), Application Administrator
     OR,
   Global Administrator
