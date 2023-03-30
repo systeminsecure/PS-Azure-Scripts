@@ -1,3 +1,17 @@
+<# Azure Risky Network Security Groups v0.1 SystemInsecure
+--== Jan 27, 2023 ==--
+
+This script lists out all Azure NSGs in a subscription and evaluates them for the following conditions:
+
+- Rules that have a destination IP address and port set to "Any" (marked yellow)
+- Rules that have a source and destination IP address set to "Any" (marked red)
+
+You must have the Az module installed first: Install-Module Az
+
+See Errata section at bottom for prerequisites, restrictions and the changelog.
+
+#>
+
 $global:Subscription = (Get-AzSubscription | out-gridview -title "Select a subscription" -OutputMode Single)
 if ($global:Subscription -eq $null) { ErrorHandler -handle "Subscription"; break }
 set-azcontext -Subscription $Subscription.Id
@@ -61,3 +75,20 @@ foreach ($rule in $objects.SecurityRules ){
     }
 
 }
+
+<# --== Errata ==--
+
+Prerequisites needed before launching:
+- Powershell 5.1 or better
+- Az module installed (you need to do this in an elevated powershell window): > install-module Az
+- Permissions (or an elevated role) to read the Network Security Group rules (recommend Contributor access to the Subscription or all Resource Groups).
+
+Restrictions
+- None
+
+To do in later versions:
+- Nothing planned
+
+Changelog:
+- 0.1 Initial version. Jan 27, 2023.
+#>
