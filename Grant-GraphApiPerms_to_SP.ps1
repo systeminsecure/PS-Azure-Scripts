@@ -1,14 +1,14 @@
-<# Grant-GraphApiPerms_to_SP.ps1 v0.1 SystemInsecure
- --== March 30, 2023 ==--
+<# Grant-GraphApiPerms_to_ServicePrincipal.ps1 v0.2 SystemInsecure
+ --== May 17, 2024 ==--
  
 Some Azure Enterprise apps (Service Principals) need additional permissions. If there is already an associated
 App Registration, those additional permissions can be granted there in the Azure Portal. If the App Registration is missing, you can use 
 the Microsoft Graph PowerShell Module to add those permissions to the Service Principal directly as there currently is no way
-to do this throught he Azure Portal.
+to do this through the Azure Portal.
 
 The user running this script will need the following roles:
 
-  Privileged Role Administrator (needed for grants to Graph API), Application Administrator
+  Privileged Role Administrator (needed for grants to Graph API) + Application Administrator
     OR,
   Global Administrator
   
@@ -20,8 +20,10 @@ https://learn.microsoft.com/en-us/powershell/microsoftgraph/tutorial-grant-app-o
 See Errata section at bottom for prerequisites, restrictions and the changelog.
 #>
 
+
+
 # Check to see if the Microsoft.Graph powershell module is installed
-foreach($module in "Microsoft.Graph.Authentication","Microsoft.Graph.Applications"){
+foreach($module in "Microsoft.Graph.Authentication","Microsoft.Graph.Applications","MSAL.PS"){
 	if (!(Get-Module -name $module)){
         	if (Get-Module -ListAvailable -Name $module) {
             		Write-Host ("> Module $($module) installed but not loaded`, importing it for use.") -ForegroundColor White
@@ -37,46 +39,51 @@ foreach($module in "Microsoft.Graph.Authentication","Microsoft.Graph.Application
     	}
 }
 
+
 # Interactive Authentication
 Connect-MgGraph -Scopes "Application.Read.All","AppRoleAssignment.ReadWrite.All"
 
+#List scopes in session
+$Context = Get-MgContext 
+$Context.Account
+$Context.AuthType
+$Context.Scopes
+
 # Set Variables
-$RoleRecords = @()
-$ApplicationName = "<My Service Principal/Enterprise App Name>" # change this variable to match the SP you are working on
+$ServicePrincipalDisplayName = "jsm-it-automations"
+$Roles = @(
+    "Exchange.ManageAsApp"
+)
+$RoleAPI = "Office 365 Exchange Online" # could also be "Microsoft Graph"
 
-# Graph API Resource ID
-$ResourceId=(Get-MgServicePrincipal -Filter "displayName eq 'Microsoft Graph'").Id
+# Get id of enterprise app service principal
+$AppPrincipal = (Get-MgServicePrincipal -Filter "displayName eq '$($ServicePrincipalDisplayName)'")
 
-# Additional role IDs to add
-$Roles = @("Directory.Read.All","Mail.Read","Mail.ReadBasic.All","MailboxSettings.Read","Mail.ReadBasic.Shared","email")
-$AllRoles = Get-MgServicePrincipal -Filter "displayName eq 'Microsoft Graph'" -Property AppRoles | Select -ExpandProperty appRoles | Select Value,Id
-foreach ($role in $AllRoles){
-        if ($role.value -in $Roles){
-                $myRole = [PSCustomObject] @{
-                                "ResourceID" = $($ResourceId)
-                                "AppRoleId" = $($role.Id)
-                                "Value" = $($role.Value)
-                }
-        $RoleRecords = $RoleRecords + $myRole
-        }
+# Additional Graph role IDs to add
+$GraphPrincipal = Get-MgServicePrincipal -Filter "displayName eq '$($RoleAPI)'"
+$oAppRole = $GraphPrincipal.AppRoles | Where-Object {($_.Value -in $Roles) -and ($_.AllowedMemberTypes -contains "Application")}
+
+
+#Add roles to AppPrincipal
+foreach($AppRole in $oAppRole)
+{
+  $oAppRoleAssignment = @{
+    "PrincipalId" = $AppPrincipal.Id
+    "ResourceId" = $GraphPrincipal.Id
+    "AppRoleId" = $AppRole.Id
+  }
+  
+  if($AppRole.Id -notin (Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $oAppRoleAssignment.PrincipalId).AppRoleId){
+    New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $oAppRoleAssignment.PrincipalId -BodyParameter $oAppRoleAssignment -Verbose
+  } else {
+    echo "$($AppRole.Value) already exists in $($ServicePrincipalDisplayName)"
+  }
 }
 
 
-# Get id of enterprise app
-$PrincipalId = (Get-MgServicePrincipal -Filter "displayName eq '$($ApplicationName)'").Id   #-Property AppRoles | Select -ExpandProperty appRoles |fl
-
-# Set permission grant loop
-Foreach ($record in $RoleRecords) {
-    $params = @{
-      "PrincipalId" = $PrincipalId
-      "ResourceId" = $record.ResourceId
-      "AppRoleId" = $record.AppRoleId
-    }
-    $params
-    New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $record.ResourceId -BodyParameter $params | Format-List Id, AppRoleId, CreatedDateTime, PrincipalDisplayName, PrincipalId, PrincipalType, ResourceDisplayName
-}
 
 <# --== Errata ==--
+
 Prerequisites needed before launching:
 - Powershell 5.1 or better
 - Graph API module installed (you need to do this in an elevated powershell window): > install-module Microsoft.Graph
@@ -90,4 +97,5 @@ To do in later versions:
 
 Changelog:
 - 0.1 Initial version. Mar 30, 2023.
+- 0.2 bugfixes and simplify script. May 17, 2024
 #>
