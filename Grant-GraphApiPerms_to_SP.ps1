@@ -1,5 +1,4 @@
-<# Grant-GraphApiPerms_to_ServicePrincipal.ps1 v0.2 SystemInsecure
- --== May 17, 2024 ==--
+<# Grant-GraphApiPerms_to_ServicePrincipal.ps1 v0.2.1 2024-10-29 systeminsecure
  
 Some Azure Enterprise apps (Service Principals) need additional permissions. If there is already an associated
 App Registration, those additional permissions can be granted there in the Azure Portal. If the App Registration is missing, you can use 
@@ -50,11 +49,13 @@ $Context.AuthType
 $Context.Scopes
 
 # Set Variables
-$ServicePrincipalDisplayName = "jsm-it-automations"
+$ServicePrincipalDisplayName = "<name of account here>"
 $Roles = @(
     "Exchange.ManageAsApp"
 )
-$RoleAPI = "Office 365 Exchange Online" # could also be "Microsoft Graph"
+$RoleAPI = "Office 365 Exchange Online" 
+#for "Exchange.ManageAsApp", the role API needs to be set to "Office 365 Exchange Online"
+#for "UserAuthenticationMethod.ReadWrite.All" the role API needs to be set to "Microsoft Graph"
 
 # Get id of enterprise app service principal
 $AppPrincipal = (Get-MgServicePrincipal -Filter "displayName eq '$($ServicePrincipalDisplayName)'")
@@ -98,4 +99,5 @@ To do in later versions:
 Changelog:
 - 0.1 Initial version. Mar 30, 2023.
 - 0.2 bugfixes and simplify script. May 17, 2024
+- 0.2.1 Added documentation Oct 29, 2024
 #>
